@@ -1,0 +1,16 @@
+# 不需要上传到 Vercel 的文件
+
+node_modules
+.git
+*.log
+.env.local
+.vscode
+.idea
+
+# 文档文件
+README.md
+WEATHER_API_SETUP.md
+
+# Node.js 安装包
+node-v18.20.8-win-x64
+

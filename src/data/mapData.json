@@ -1,0 +1,24 @@
+{
+  "mapPoints": [
+    {
+      "id": 1,
+      "longitude": 108.16036053,
+      "latitude": 30.42729920,
+      "altitude": 144.31,
+      "vegetationType": "药材种植时间:4到7月备注:植被覆盖率很低"
+    },
+    {
+      "id": 2,
+      "longitude": 108.16048200,
+      "latitude": 30.42773597,
+      "altitude": 145.6,
+      "vegetationType": "药材种植时间:4到7月"
+    }
+  ],
+  "mapInfo": {
+    "name": "重庆农业调查点",
+    "description": "重庆市农业调查数据",
+    "totalPoints": 50,
+    "dateCreated": "2024-01-01"
+  }
+}

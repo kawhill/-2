@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LayerFile>
+  <FeatureClass>
+    <Feature>
+      <X>108.16036053</X>
+      <Y>30.42729920</Y>
+      <Z>144.31</Z>
+      <Vegetation>药材</Vegetation>
+      <PlantingTime>4到7月</PlantingTime>
+      <Notes>植被覆盖率很低</Notes>
+    </Feature>
+    <Feature>
+      <X>108.16048200</X>
+      <Y>30.42773597</Y>
+      <Z>145.6</Z>
+      <Vegetation>药材</Vegetation>
+      <PlantingTime>4到7月</PlantingTime>
+    </Feature>
+    <Feature>
+      <X>108.16176400</X>
+      <Y>30.42800497</Y>
+      <Z>147.71</Z>
+      <Vegetation>药材</Vegetation>
+      <PlantingTime>4到7月</PlantingTime>
+    </Feature>
+    <Feature>
+      <X>108.16316897</X>
+      <Y>30.42898597</Y>
+      <Z>150.97</Z>
+      <Vegetation>花生</Vegetation>
+      <PlantingTime>4到9月</PlantingTime>
+    </Feature>
+    <Feature>
+      <X>108.16499397</X>
+      <Y>30.43027100</Y>
+      <Z>174.56</Z>
+      <Vegetation>冬黄豆</Vegetation>
+      <PlantingTime>5到10月</PlantingTime>
+    </Feature>
+  </FeatureClass>
+</LayerFile>
