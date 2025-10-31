@@ -49,35 +49,35 @@
       </div>
 
       <!-- 土壤属性 -->
-      <div class="info-section">
+      <div v-if="data.soilAttributes && (data.soilAttributes.soilType || data.soilAttributes.ph !== undefined || data.soilAttributes.organicMatter !== undefined || data.soilAttributes.moisture !== undefined)" class="info-section">
         <h4>🌍 土壤属性</h4>
         <div class="info-grid">
-          <div class="info-item">
+          <div v-if="data.soilAttributes.soilType" class="info-item">
             <span class="label">土壤类型:</span>
-            <span class="value">{{ data.soilAttributes?.soilType || '--' }}</span>
+            <span class="value">{{ data.soilAttributes.soilType }}</span>
           </div>
-          <div class="info-item">
+          <div v-if="data.soilAttributes.ph !== undefined" class="info-item">
             <span class="label">pH值:</span>
-            <span class="value">{{ data.soilAttributes?.ph !== undefined ? data.soilAttributes.ph : '--' }}</span>
+            <span class="value">{{ data.soilAttributes.ph }}</span>
           </div>
-          <div class="info-item">
+          <div v-if="data.soilAttributes.organicMatter !== undefined" class="info-item">
             <span class="label">有机质含量:</span>
-            <span class="value">{{ data.soilAttributes?.organicMatter !== undefined ? data.soilAttributes.organicMatter + '%' : '--' }}</span>
+            <span class="value">{{ data.soilAttributes.organicMatter }}%</span>
           </div>
-          <div class="info-item">
+          <div v-if="data.soilAttributes.moisture !== undefined" class="info-item">
             <span class="label">土壤湿度:</span>
-            <span class="value">{{ data.soilAttributes?.moisture !== undefined ? data.soilAttributes.moisture + '%' : '--' }}</span>
+            <span class="value">{{ data.soilAttributes.moisture }}%</span>
           </div>
         </div>
       </div>
 
-      <!-- 地形高差 -->
-      <div class="info-section">
+      <!-- 地形高差 - 仅在有数据点时显示 -->
+      <div v-if="hasDataPoint" class="info-section">
         <h4>⛰️ 地形高差</h4>
         <div class="info-grid">
           <div class="info-item">
             <span class="label">海拔高度:</span>
-            <span class="value">{{ data.terrainInfo?.elevation !== undefined ? data.terrainInfo.elevation + 'm' : (data.location.elevation || '--') }}</span>
+            <span class="value">{{ data.terrainInfo?.elevation !== undefined ? data.terrainInfo.elevation + 'm' : (data.location.elevation ? data.location.elevation + 'm' : '--') }}</span>
           </div>
           <div class="info-item">
             <span class="label">地形高差:</span>
@@ -94,8 +94,8 @@
         </div>
       </div>
 
-      <!-- 蒸散发信息 -->
-      <div class="info-section">
+      <!-- 蒸散发信息 - 仅在有数据点时显示 -->
+      <div v-if="hasDataPoint" class="info-section">
         <h4>💧 蒸散发信息</h4>
         <div class="info-grid">
           <div class="info-item">
@@ -157,7 +157,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import type { MapClickData } from '@/types'
 
 const props = defineProps<{
@@ -213,6 +213,17 @@ const formatDate = (dateString: string) => {
     weekday: 'short'
   })
 }
+
+// 判断是否有数据点（导入点或用户导入的点）
+const hasDataPoint = computed(() => {
+  // 如果有作物信息、土壤属性或蒸散发信息，说明是有数据点的位置
+  return !!(
+    props.data.cropInfo || 
+    props.data.soilAttributes || 
+    props.data.evapotranspiration ||
+    props.data.terrainInfo
+  )
+})
 
 const getLocationDisplayName = () => {
   if (!props.data.location.locationName) {

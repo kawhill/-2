@@ -10,11 +10,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import L from 'leaflet'
 import type { GeoLocation, MapClickData, ImportedGeoPoint } from '@/types'
+import type { UserDataSet } from '@/types/userData'
 import { MapConfigService } from '@/services/mapConfigService'
 import { CompleteCityDatabaseService, type CityInfo as ServiceCityInfo } from '@/services/completeCityDatabaseService'
+import { LocationNameService } from '@/services/locationNameService'
 
 // 修复 Leaflet 默认图标问题
 delete (L.Icon.Default.prototype as any)._getIconUrl
@@ -27,6 +29,7 @@ L.Icon.Default.mergeOptions({
 const props = defineProps<{
   onLocationClick: (data: MapClickData) => void
   importedPoints?: ImportedGeoPoint[]
+  userDataSets?: UserDataSet[]
 }>()
 
 const emit = defineEmits<{
@@ -39,6 +42,8 @@ const selectedLayer = ref('Esri卫星图')
 let map: L.Map | null = null
 let currentTileLayer: L.TileLayer | null = null
 let searchMarker: L.Marker | null = null
+let userDataMarkers: L.Marker[] = [] // 存储用户数据标记
+let importedPointMarkers: L.Marker[] = [] // 存储导入点标记（红色）
 
 // 获取服务实例
 const mapConfigService = MapConfigService.getInstance()
@@ -51,6 +56,17 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  // 清理所有标记
+  userDataMarkers.forEach(marker => {
+    if (map) map.removeLayer(marker)
+  })
+  importedPointMarkers.forEach(marker => {
+    if (map) map.removeLayer(marker)
+  })
+  if (searchMarker && map) {
+    map.removeLayer(searchMarker)
+  }
+  
   if (map) {
     map.remove()
   }
@@ -80,10 +96,19 @@ const initMap = () => {
   
   // 添加导入的点标记
   addImportedPoints()
+  
+  // 添加用户数据点标记
+  displayUserData()
 }
 
 const addImportedPoints = () => {
   if (!map || !props.importedPoints) return
+  
+  // 清除旧的导入点标记（如果有）
+  importedPointMarkers.forEach(marker => {
+    map?.removeLayer(marker)
+  })
+  importedPointMarkers = []
   
   // 为每个导入的点添加标记
   props.importedPoints.forEach(point => {
@@ -102,6 +127,8 @@ const addImportedPoints = () => {
     marker.on('click', () => {
       handleImportedPointClick(point)
     })
+    
+    importedPointMarkers.push(marker)
   })
   
   // 如果有导入的点，调整地图视图以显示所有点
@@ -113,6 +140,120 @@ const addImportedPoints = () => {
     map.fitBounds(group.getBounds().pad(0.1))
   }
 }
+
+/**
+ * 显示用户数据点
+ */
+const displayUserData = () => {
+  if (!map || !props.userDataSets || props.userDataSets.length === 0) return
+  
+  // 清除旧的用户数据标记
+  userDataMarkers.forEach(marker => {
+    map?.removeLayer(marker)
+  })
+  userDataMarkers = []
+  
+  // 添加新的用户数据标记
+  props.userDataSets.forEach(dataSet => {
+    // 每个数据集（分区）的编号独立，从1开始
+    let dataSetPointIndex = 1
+    dataSet.points.forEach(point => {
+      // 创建用户数据点标记（用绿色区分），显示编号
+      const userIcon = L.divIcon({
+        className: 'user-point-marker',
+        html: `<div style="
+          background-color: #4CAF50;
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          border: 2px solid white;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-size: 10px;
+          font-weight: bold;
+        ">${dataSetPointIndex}</div>`,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+      })
+      
+      const marker = L.marker([point.latitude, point.longitude], { icon: userIcon })
+        .addTo(map!)
+      
+      // 简化弹窗内容，只显示点名称（详细信息在InfoPopup中显示）
+      const popupContent = `<div style="text-align: center; padding: 8px;">
+        <b style="font-size: 14px; color: #333;">${point.name || '未命名'}</b>
+      </div>`
+      
+      marker.bindPopup(popupContent)
+      
+      // 添加点击事件
+      marker.on('click', () => {
+        handleUserPointClick(point)
+      })
+      
+      userDataMarkers.push(marker)
+      dataSetPointIndex++ // 该数据集内的编号递增
+    })
+  })
+  
+  console.log('✅ 已显示', userDataMarkers.length, '个用户数据点')
+}
+
+/**
+ * 处理用户数据点点击
+ */
+const handleUserPointClick = async (point: any) => {
+  // 获取位置名称
+  const locationNameService = LocationNameService.getInstance()
+  const location: GeoLocation = {
+    lat: point.latitude,
+    lng: point.longitude,
+    elevation: point.altitude
+  }
+  const locationName = await Promise.resolve(locationNameService.getLocationName(location))
+  
+  // 构造完整的点击数据
+  const clickData: MapClickData = {
+    location: {
+      ...location,
+      locationName
+    },
+    cropInfo: point.cropType ? {
+      name: point.cropType,
+      plantingTime: point.plantingTime || '--',
+      growthStage: '--',
+      area: 0,
+      notes: point.notes || '--'
+    } : undefined,
+    weatherForecast: [],
+    soilAttributes: point.soilType ? {
+      soilType: point.soilType,
+      notes: point.notes
+    } : undefined,
+    evapotranspiration: point.evapotranspiration !== undefined ? {
+      et: point.evapotranspiration
+    } : undefined
+  }
+  
+  emit('locationClick', clickData)
+}
+
+// 监听用户数据变化
+watch(() => props.userDataSets, () => {
+  if (map) {
+    displayUserData()
+  }
+}, { deep: true })
+
+// 监听导入点变化
+watch(() => props.importedPoints, () => {
+  if (map) {
+    addImportedPoints()
+  }
+}, { deep: true })
 
 const addTileLayer = (layer: any) => {
   if (!map) return
@@ -229,7 +370,7 @@ const changeMapLayer = (layerName: string) => {
   }
 }
 
-const goToRegion = (lat: number, lng: number, zoom: number) => {
+const goToRegion = (lat: number, lng: number, zoom: number, regionName?: string) => {
   if (!map) return
   
   // 移动到指定区域
@@ -238,20 +379,23 @@ const goToRegion = (lat: number, lng: number, zoom: number) => {
   // 移除之前的搜索标记
   if (searchMarker) {
     map.removeLayer(searchMarker)
+    searchMarker = null
   }
   
-  // 添加区域标记
-  const popupContent = `
-    <div style="text-align: center;">
-      <b>石宝镇分区</b><br/>
-      <span style="color: #666; font-size: 0.9em;">重庆市</span>
-    </div>
-  `
-  
-  searchMarker = L.marker([lat, lng])
-    .addTo(map)
-    .bindPopup(popupContent)
-    .openPopup()
+  // 如果有分区名称，添加区域标记
+  if (regionName) {
+    const popupContent = `
+      <div style="text-align: center;">
+        <b>${regionName}</b><br/>
+        <span style="color: #666; font-size: 0.9em;">分区中心</span>
+      </div>
+    `
+    
+    searchMarker = L.marker([lat, lng])
+      .addTo(map)
+      .bindPopup(popupContent)
+      .openPopup()
+  }
 }
 
 const getLevelText = (level: string): string => {

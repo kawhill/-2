@@ -68,12 +68,29 @@
 
         <div class="menu-section">
           <div class="menu-item" @click="toggleMenu('region')">
-            <span class="menu-icon">🗂️</span>
-            <span class="menu-text">分区管理</span>
+            <span class="menu-icon">🎯</span>
+            <span class="menu-text">分区切换</span>
             <span class="menu-arrow">{{ expandedMenus.region ? '▼' : '▶' }}</span>
           </div>
           <div v-if="expandedMenus.region" class="submenu">
-            <div class="submenu-item" @click="gotoShibaoRegion">石宝镇</div>
+            <!-- 动态显示所有分区（包括石宝镇） -->
+            <div 
+              v-for="dataSet in regionDataSets" 
+              :key="dataSet.id"
+              class="submenu-item user-region-item" 
+              @click="gotoUserRegion(dataSet)">
+              <span class="region-icon">🎯</span>
+              <span>{{ dataSet.regionName }}</span>
+              <span class="region-point-count">({{ dataSet.points.length }})</span>
+            </div>
+            <div v-if="regionDataSets.length === 0 && expandedMenus.region" class="submenu-hint">
+              暂无导入的分区数据
+            </div>
+            <!-- 分区管理（放在最下方） -->
+            <div class="submenu-item submenu-header" @click="showRegionManagement">
+              <span class="region-icon">📋</span>
+              <span>分区管理</span>
+            </div>
           </div>
         </div>
 
@@ -192,11 +209,34 @@
       </div>
     </div>
   </div>
+
+  <!-- 数据导入面板 -->
+  <DataImportPanel
+    v-if="showImportModal"
+    @close="closeImportModal"
+    @import-success="handleImportSuccess"
+    @manage-data="showExportData"
+  />
+  
+  <!-- 分区管理面板 -->
+  <RegionManagementPanel
+    v-if="showRegionManagementModal"
+    :visible="showRegionManagementModal"
+    :data-sets="userDataSets"
+    @close="closeRegionManagement"
+    @region-deleted="handleRegionDeleted"
+    @region-renamed="handleRegionRenamed"
+    @view-region="handleViewRegionFromManagement"
+  />
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted, computed } from 'vue'
 import { CompleteCityDatabaseService, type CityInfo as ServiceCityInfo } from '@/services/completeCityDatabaseService'
+import DataImportPanel from './DataImportPanel.vue'
+import RegionManagementPanel from './RegionManagementPanel.vue'
+import { UserDataStorageService } from '@/services/userDataStorageService'
+import type { UserDataSet } from '@/types/userData'
 
 // 定义事件
 const emit = defineEmits<{
@@ -204,12 +244,16 @@ const emit = defineEmits<{
   coordinateSelected: [lat: number, lng: number]
   layerChanged: [layerName: string]
   cityQuickSelect: [cityName: string]
-  regionNavigate: [lat: number, lng: number, zoom: number]
+  regionNavigate: [lat: number, lng: number, zoom: number, regionName?: string]
+  userDataUpdated: [dataSets: UserDataSet[]]
 }>()
 
 // 响应式数据
 const showCityModal = ref(false)
 const showCoordinateModal = ref(false)
+const showImportModal = ref(false)
+const showRegionManagementModal = ref(false)
+const userDataSets = ref<UserDataSet[]>([])
 const expandedMenus = ref({
   search: false,
   map: false,
@@ -219,6 +263,8 @@ const expandedMenus = ref({
   region: false,
   system: false
 })
+
+// 移除了 expandedSubMenus，因为不再需要嵌套菜单
 
 // 搜索相关数据
 const citySearchQuery = ref('')
@@ -250,6 +296,36 @@ const toggleMenu = (menuKey: keyof typeof expandedMenus.value) => {
   
   // 切换当前菜单
   expandedMenus.value[menuKey] = !expandedMenus.value[menuKey]
+}
+
+// 显示分区管理
+const showRegionManagement = () => {
+  showRegionManagementModal.value = true
+}
+
+// 关闭分区管理
+const closeRegionManagement = () => {
+  showRegionManagementModal.value = false
+}
+
+// 处理分区删除
+const handleRegionDeleted = () => {
+  loadUserData()
+  emit('userDataUpdated', userDataSets.value)
+  console.log('✅ 分区已删除，数据已更新')
+}
+
+// 处理分区重命名
+const handleRegionRenamed = () => {
+  loadUserData()
+  emit('userDataUpdated', userDataSets.value)
+  console.log('✅ 分区已重命名，数据已更新')
+}
+
+// 从分区管理面板查看分区
+const handleViewRegionFromManagement = (dataSet: UserDataSet) => {
+  // 导航到该分区
+  gotoUserRegion(dataSet)
 }
 
 const showCitySearchModal = () => {
@@ -332,14 +408,46 @@ const goToCity = (event: Event) => {
   }
 }
 
-// 占位方法
+// 数据导入导出方法
 const showImportData = () => {
-  console.log('显示数据导入')
+  showImportModal.value = true
+  showCityModal.value = false
+  showCoordinateModal.value = false
 }
 
 const showExportData = () => {
-  console.log('显示数据导出')
+  // TODO: 显示数据管理面板
+  console.log('显示数据导出/管理')
+  alert('数据管理功能开发中...')
 }
+
+// 计算有分区名称的数据集
+const regionDataSets = computed(() => {
+  return userDataSets.value.filter(dataSet => dataSet.regionName && dataSet.regionName.trim() !== '')
+})
+
+// 加载用户数据
+const loadUserData = () => {
+  userDataSets.value = UserDataStorageService.loadDataSets()
+  console.log('✅ Sidebar: 已加载用户数据', userDataSets.value.length, '个数据集')
+  console.log('✅ Sidebar: 有分区名称的数据集', regionDataSets.value.length, '个')
+}
+
+// 处理导入成功
+const handleImportSuccess = (dataSet: UserDataSet) => {
+  loadUserData()
+  emit('userDataUpdated', userDataSets.value)
+}
+
+// 关闭导入面板
+const closeImportModal = () => {
+  showImportModal.value = false
+}
+
+// 页面加载时恢复用户数据
+onMounted(() => {
+  loadUserData()
+})
 
 const showStatistics = () => {
   console.log('显示统计分析')
@@ -361,10 +469,48 @@ const showCoordinateTransform = () => {
   console.log('显示坐标转换')
 }
 
-const gotoShibaoRegion = () => {
-  // 石宝镇的坐标（根据图片显示的区域大致中心点）
-  // 大约在 30.425, 108.165 左右
-  emit('regionNavigate', 30.425, 108.165, 14)
+/**
+ * 导航到用户导入的分区（包括石宝镇）
+ */
+const gotoUserRegion = (dataSet: UserDataSet) => {
+  if (!dataSet.regionName || dataSet.points.length === 0) return
+  
+  // 计算所有点的中心坐标
+  let sumLat = 0
+  let sumLng = 0
+  let minLat = Infinity
+  let maxLat = -Infinity
+  let minLng = Infinity
+  let maxLng = -Infinity
+  
+  dataSet.points.forEach(point => {
+    sumLat += point.latitude
+    sumLng += point.longitude
+    minLat = Math.min(minLat, point.latitude)
+    maxLat = Math.max(maxLat, point.latitude)
+    minLng = Math.min(minLng, point.longitude)
+    maxLng = Math.max(maxLng, point.longitude)
+  })
+  
+  // 计算中心点
+  const centerLat = sumLat / dataSet.points.length
+  const centerLng = sumLng / dataSet.points.length
+  
+  // 根据点之间的跨度计算合适的缩放级别
+  const latSpan = maxLat - minLat
+  const lngSpan = maxLng - minLng
+  const maxSpan = Math.max(latSpan, lngSpan)
+  
+  // 根据跨度计算缩放级别（范围大概在 10-15）
+  let zoom = 14
+  if (maxSpan > 0.05) zoom = 11 // 跨度大，缩小
+  else if (maxSpan > 0.02) zoom = 12
+  else if (maxSpan > 0.01) zoom = 13
+  else if (maxSpan > 0.005) zoom = 14
+  else zoom = 15 // 跨度小，放大
+  
+  console.log(`📍 导航到分区 "${dataSet.regionName}" (${dataSet.points.length}个点)`)
+  emit('regionNavigate', centerLat, centerLng, zoom, dataSet.regionName)
 }
 
 const showSettings = () => {
@@ -487,6 +633,9 @@ const getLevelText = (level: string): string => {
   font-size: 13px;
   transition: all 0.3s ease;
   border: 1px solid transparent;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .submenu-item:hover {
@@ -494,6 +643,52 @@ const getLevelText = (level: string): string => {
   color: #ecf0f1;
   border-color: #3498db;
   transform: translateX(3px);
+}
+
+.region-icon {
+  font-size: 14px;
+}
+
+.user-region-item {
+  background: rgba(46, 204, 113, 0.15) !important;
+  border-left: 3px solid #2ecc71 !important;
+}
+
+.user-region-item:hover {
+  background: rgba(46, 204, 113, 0.25) !important;
+  border-left-color: #27ae60 !important;
+}
+
+.region-point-count {
+  margin-left: auto;
+  font-size: 11px;
+  color: #95a5a6;
+  opacity: 0.8;
+}
+
+.submenu-hint {
+  padding: 8px 12px;
+  margin-bottom: 4px;
+  color: #7f8c8d;
+  font-size: 12px;
+  font-style: italic;
+  text-align: center;
+}
+
+.submenu-header {
+  font-weight: 600;
+  background: rgba(52, 152, 219, 0.2) !important;
+}
+
+.submenu-header:hover {
+  background: rgba(52, 152, 219, 0.3) !important;
+}
+
+.sub-submenu {
+  margin-left: 15px;
+  margin-top: 4px;
+  border-left: 2px solid #34495e;
+  padding-left: 15px;
 }
 
 /* 搜索面板 */

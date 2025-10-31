@@ -11,8 +11,10 @@ export default defineConfig({
     }
   },
   server: {
+    host: 'localhost',  // 固定使用 localhost，避免域名切换
     port: 3000,
-    open: true
+    open: true,
+    strictPort: true   // 如果端口被占用，报错而不是切换端口
   },
   build: {
     // 优化构建
