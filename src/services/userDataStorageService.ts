@@ -30,7 +30,15 @@ export class UserDataStorageService {
       }
       
       localStorage.setItem(this.STORAGE_KEY, dataStr)
-      console.log('✅ 数据已保存', dataSets.length, '个数据集')
+      
+      // 立即验证保存是否成功
+      const verifyStr = localStorage.getItem(this.STORAGE_KEY)
+      if (!verifyStr || verifyStr !== dataStr) {
+        console.error('❌ 保存验证失败：数据未正确保存到 localStorage')
+        return false
+      }
+      
+      console.log('✅ 数据已保存并验证成功', dataSets.length, '个数据集，大小:', (dataStr.length / 1024).toFixed(2), 'KB')
       return true
     } catch (error) {
       console.error('❌ 保存数据失败:', error)

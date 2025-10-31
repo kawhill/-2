@@ -268,14 +268,6 @@ const handleUserDataUpdated = (dataSets: UserDataSet[]) => {
 onMounted(() => {
   console.log('🚀 App: 开始初始化...')
   
-  // 删除已存在的石宝镇数据集（如果存在）
-  const existingDataSets = UserDataStorageService.loadDataSets()
-  const shibaoDataSet = existingDataSets.find(ds => ds.regionName === '石宝镇')
-  if (shibaoDataSet) {
-    console.log('🗑️ 删除已存在的石宝镇数据集...')
-    UserDataStorageService.deleteDataSet(shibaoDataSet.id)
-  }
-  
   // 加载用户数据
   loadUserData()
   

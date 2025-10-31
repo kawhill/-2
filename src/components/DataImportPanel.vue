@@ -295,13 +295,26 @@ const confirmImport = () => {
     const success = UserDataStorageService.addDataSet(dataSet)
     
     if (success) {
+      // 再次验证数据是否真的保存了
+      const verifyDataSets = UserDataStorageService.loadDataSets()
+      const saved = verifyDataSets.find(ds => ds.id === dataSet.id)
+      
+      if (!saved) {
+        console.error('❌ 数据保存验证失败：导入后立即检查数据不存在')
+        alert('数据保存失败，请检查浏览器设置或使用导出功能备份数据')
+        return
+      }
+      
       importedCount.value = parsedData.value.length
       currentStep.value = 3
       
       // 通知父组件
       emit('importSuccess', dataSet)
+      
+      console.log('✅ 导入成功，数据已保存到 localStorage，可以在控制台运行以下命令验证：')
+      console.log('localStorage.getItem("user_data_sets")')
     } else {
-      alert('保存失败，可能是存储空间不足')
+      alert('保存失败，可能是存储空间不足或浏览器限制了存储权限')
     }
   } catch (error) {
     console.error('导入失败:', error)
