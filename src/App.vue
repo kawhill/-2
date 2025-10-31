@@ -127,7 +127,8 @@ const loadImportedPoints = () => {
   */
 }
 
-// 临时保存原始石宝镇数据用于初始化
+// 已废弃：石宝镇数据已删除，不再自动初始化
+/*
 const getShibaoRawPoints = (): Array<{id: number, longitude: number, latitude: number, altitude: number, vegetationType: string}> => {
   return [
     // 点1-28：根据第一个表格的海拔数据
@@ -184,8 +185,10 @@ const getShibaoRawPoints = (): Array<{id: number, longitude: number, latitude: n
     { id: 50, longitude: 108.17573500, latitude: 30.42894497, altitude: 200.85, vegetationType: "红薯种植时间:5到10月" }
   ]
 }
+*/
 
-// 初始化石宝镇数据集（如果不存在）
+// 已废弃：石宝镇数据已删除，不再自动初始化
+/*
 const initializeShibaoDataSet = () => {
   const existingDataSets = UserDataStorageService.loadDataSets()
   
@@ -238,6 +241,7 @@ const initializeShibaoDataSet = () => {
     console.error('❌ 初始化石宝镇数据集失败')
   }
 }
+*/
 
 // 加载用户数据
 const loadUserData = () => {
@@ -264,14 +268,15 @@ const handleUserDataUpdated = (dataSets: UserDataSet[]) => {
 onMounted(() => {
   console.log('🚀 App: 开始初始化...')
   
-  // 先加载已有数据，检查是否有数据
-  loadUserData()
+  // 删除已存在的石宝镇数据集（如果存在）
+  const existingDataSets = UserDataStorageService.loadDataSets()
+  const shibaoDataSet = existingDataSets.find(ds => ds.regionName === '石宝镇')
+  if (shibaoDataSet) {
+    console.log('🗑️ 删除已存在的石宝镇数据集...')
+    UserDataStorageService.deleteDataSet(shibaoDataSet.id)
+  }
   
-  // 然后初始化石宝镇数据集（如果不存在）
-  console.log('📋 App: 检查石宝镇数据集...')
-  initializeShibaoDataSet()
-  
-  // 再次加载数据（因为可能新创建了石宝镇数据集）
+  // 加载用户数据
   loadUserData()
   
   // 加载导入的点数据（已废弃，保持兼容性）

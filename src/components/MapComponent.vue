@@ -158,11 +158,11 @@ const displayUserData = () => {
     // 每个数据集（分区）的编号独立，从1开始
     let dataSetPointIndex = 1
     dataSet.points.forEach(point => {
-      // 创建用户数据点标记（用绿色区分），显示编号
+      // 创建用户数据点标记（红色），显示编号
       const userIcon = L.divIcon({
         className: 'user-point-marker',
         html: `<div style="
-          background-color: #4CAF50;
+          background-color: #e74c3c;
           width: 20px;
           height: 20px;
           border-radius: 50%;
