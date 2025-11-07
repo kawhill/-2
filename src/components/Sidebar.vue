@@ -470,10 +470,11 @@ const showCoordinateTransform = () => {
 }
 
 /**
- * 导航到用户导入的分区（包括石宝镇）
+ * 导航到用户导入的分区（包括未命名分区）
  */
 const gotoUserRegion = (dataSet: UserDataSet) => {
-  if (!dataSet.regionName || dataSet.points.length === 0) return
+  // 只要有数据点就可以导航，不要求必须有分区名称
+  if (dataSet.points.length === 0) return
   
   // 计算所有点的中心坐标
   let sumLat = 0
@@ -509,7 +510,8 @@ const gotoUserRegion = (dataSet: UserDataSet) => {
   else if (maxSpan > 0.005) zoom = 14
   else zoom = 15 // 跨度小，放大
   
-  console.log(`📍 导航到分区 "${dataSet.regionName}" (${dataSet.points.length}个点)`)
+  const regionDisplayName = dataSet.regionName || '未命名分区'
+  console.log(`📍 导航到分区 "${regionDisplayName}" (${dataSet.points.length}个点)`)
   emit('regionNavigate', centerLat, centerLng, zoom, dataSet.regionName)
 }
 

@@ -384,17 +384,17 @@ const goToRegion = (lat: number, lng: number, zoom: number, regionName?: string)
   
   // 如果有分区名称，添加区域标记
   if (regionName) {
-    const popupContent = `
-      <div style="text-align: center;">
+  const popupContent = `
+    <div style="text-align: center;">
         <b>${regionName}</b><br/>
         <span style="color: #666; font-size: 0.9em;">分区中心</span>
-      </div>
-    `
-    
-    searchMarker = L.marker([lat, lng])
-      .addTo(map)
-      .bindPopup(popupContent)
-      .openPopup()
+    </div>
+  `
+  
+  searchMarker = L.marker([lat, lng])
+    .addTo(map)
+    .bindPopup(popupContent)
+    .openPopup()
   }
 }
 

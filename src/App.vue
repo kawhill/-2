@@ -12,12 +12,12 @@
       
       <main class="app-main">
         <div class="map-wrapper">
-        <MapComponent 
-          ref="mapComponent"
-          @location-click="handleLocationClick" 
-          :imported-points="importedPoints"
+          <MapComponent 
+            ref="mapComponent"
+            @location-click="handleLocationClick" 
+            :imported-points="importedPoints"
           :user-data-sets="userDataSets"
-        />
+          />
         </div>
         
         <InfoPopup
@@ -272,7 +272,7 @@ onMounted(() => {
   loadUserData()
   
   // 加载导入的点数据（已废弃，保持兼容性）
-  loadImportedPoints()
+loadImportedPoints()
   
   console.log('✅ App: 初始化完成，共', userDataSets.value.length, '个数据集')
 })

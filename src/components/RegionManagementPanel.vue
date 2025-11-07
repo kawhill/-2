@@ -17,7 +17,10 @@
             <div class="region-info">
               <div class="region-name-row">
                 <span class="region-icon">🎯</span>
-                <span class="region-name">{{ dataSet.regionName }}</span>
+                <span class="region-name" :class="{ 'unnamed-region': !dataSet.regionName }">
+                  {{ dataSet.regionName || '未命名分区' }}
+                </span>
+                <span v-if="!dataSet.regionName" class="unnamed-badge">⚠️</span>
                 <span class="region-badge">{{ dataSet.points.length }} 个点</span>
               </div>
               <div class="region-meta">
@@ -36,8 +39,8 @@
         <!-- 空状态 -->
         <div v-else class="empty-state">
           <div class="empty-icon">📭</div>
-          <p class="empty-text">暂无分区数据</p>
-          <p class="empty-hint">导入数据时可以填写分区名称</p>
+          <p class="empty-text">暂无数据</p>
+          <p class="empty-hint">请先导入数据</p>
         </div>
       </div>
     </div>
@@ -51,7 +54,7 @@
         <div class="confirm-body">
           <div class="rename-input-group">
             <label>原分区名称：</label>
-            <div class="old-name">{{ renamingRegion?.regionName }}</div>
+            <div class="old-name">{{ renamingRegion?.regionName || '未命名分区' }}</div>
           </div>
           <div class="rename-input-group">
             <label>新分区名称：</label>
@@ -65,7 +68,7 @@
               ref="renameInputRef"
             />
           </div>
-          <p class="rename-hint">💡 修改后将在分区切换菜单中显示新名称</p>
+          <p class="rename-hint">💡 修改后将在分区切换菜单中显示新名称。未命名分区添加名称后即可在分区切换中查看</p>
         </div>
         <div class="confirm-actions">
           <button @click="cancelRename" class="btn-cancel">取消</button>
@@ -81,7 +84,7 @@
           <h4>⚠️ 确认删除</h4>
         </div>
         <div class="confirm-body">
-          <p>确定要删除分区 <strong>"{{ deletingRegion?.regionName }}"</strong> 吗？</p>
+          <p>确定要删除分区 <strong>"{{ deletingRegion?.regionName || '未命名分区' }}"</strong> 吗？</p>
           <p class="confirm-warning">此操作不可恢复，将删除该分区的所有数据点（{{ deletingRegion?.points.length }} 个）</p>
         </div>
         <div class="confirm-actions">
@@ -110,9 +113,9 @@ const emit = defineEmits<{
   viewRegion: [dataSet: UserDataSet]
 }>()
 
-// 计算有分区名称的数据集
+// 显示所有数据集（包括未命名的）
 const regionDataSets = computed(() => {
-  return props.dataSets.filter(dataSet => dataSet.regionName && dataSet.regionName.trim() !== '')
+  return props.dataSets
 })
 
 // 重命名相关状态
@@ -160,7 +163,7 @@ const handleViewRegion = (dataSet: UserDataSet) => {
   close()
 }
 
-// 重命名分区
+// 重命名分区（包括为未命名分区添加名称）
 const handleRenameRegion = (dataSet: UserDataSet) => {
   renamingRegion.value = dataSet
   newRegionName.value = dataSet.regionName || ''
@@ -206,7 +209,8 @@ const confirmRename = () => {
   const success = UserDataStorageService.updateDataSet(renamingRegion.value.id, updatedDataSet)
   
   if (success) {
-    console.log('✅ 已重命名分区:', renamingRegion.value.regionName, '->', trimmedName)
+    const oldName = renamingRegion.value.regionName || '未命名分区'
+    console.log('✅ 已重命名分区:', oldName, '->', trimmedName)
     emit('regionRenamed')
     cancelRename()
   } else {
@@ -233,7 +237,8 @@ const confirmDelete = () => {
   const success = UserDataStorageService.deleteDataSet(deletingRegion.value.id)
   
   if (success) {
-    console.log('✅ 已删除分区:', deletingRegion.value.regionName)
+    const regionName = deletingRegion.value.regionName || '未命名分区'
+    console.log('✅ 已删除分区:', regionName)
     emit('regionDeleted')
     cancelDelete()
     close()
@@ -364,6 +369,16 @@ watch(() => props.visible, (newVal) => {
   font-size: 16px;
   font-weight: bold;
   color: #333;
+}
+
+.region-name.unnamed-region {
+  color: #e74c3c;
+  font-style: italic;
+}
+
+.unnamed-badge {
+  font-size: 14px;
+  margin-left: 4px;
 }
 
 .region-badge {
