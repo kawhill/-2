@@ -244,7 +244,7 @@ import { CompleteCityDatabaseService, type CityInfo as ServiceCityInfo } from '@
 import DataImportPanel from './DataImportPanel.vue'
 import RegionManagementPanel from './RegionManagementPanel.vue'
 import AuthPanel from './AuthPanel.vue'
-import { UserDataStorageService } from '@/services/userDataStorageService'
+import { storageService } from '@/services/storage/StorageService'
 import type { UserDataSet } from '@/types/userData'
 
 // 定义事件
@@ -319,15 +319,15 @@ const closeRegionManagement = () => {
 }
 
 // 处理分区删除
-const handleRegionDeleted = () => {
-  loadUserData()
+const handleRegionDeleted = async () => {
+  await loadUserData()
   emit('userDataUpdated', userDataSets.value)
   console.log('✅ 分区已删除，数据已更新')
 }
 
 // 处理分区重命名
-const handleRegionRenamed = () => {
-  loadUserData()
+const handleRegionRenamed = async () => {
+  await loadUserData()
   emit('userDataUpdated', userDataSets.value)
   console.log('✅ 分区已重命名，数据已更新')
 }
@@ -437,15 +437,21 @@ const regionDataSets = computed(() => {
 })
 
 // 加载用户数据
-const loadUserData = () => {
-  userDataSets.value = UserDataStorageService.loadDataSets()
-  console.log('✅ Sidebar: 已加载用户数据', userDataSets.value.length, '个数据集')
-  console.log('✅ Sidebar: 有分区名称的数据集', regionDataSets.value.length, '个')
+const loadUserData = async () => {
+  try {
+    const dataSets = await storageService.loadDataSets()
+    userDataSets.value = dataSets
+    console.log('✅ Sidebar: 已加载用户数据', dataSets.length, '个数据集')
+    console.log('✅ Sidebar: 有分区名称的数据集', regionDataSets.value.length, '个')
+  } catch (error) {
+    console.error('❌ Sidebar: 加载用户数据失败:', error)
+    userDataSets.value = []
+  }
 }
 
 // 处理导入成功
-const handleImportSuccess = (dataSet: UserDataSet) => {
-  loadUserData()
+const handleImportSuccess = async (dataSet: UserDataSet) => {
+  await loadUserData()
   emit('userDataUpdated', userDataSets.value)
 }
 
@@ -456,7 +462,9 @@ const closeImportModal = () => {
 
 // 页面加载时恢复用户数据
 onMounted(() => {
-  loadUserData()
+  loadUserData().catch(error => {
+    console.error('❌ Sidebar: 加载用户数据失败:', error)
+  })
 })
 
 const showStatistics = () => {

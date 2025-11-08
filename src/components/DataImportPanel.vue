@@ -199,7 +199,7 @@
 import { ref, computed } from 'vue'
 import { v4 as uuidv4 } from 'uuid'
 import { DataParserService } from '@/services/dataParserService'
-import { UserDataStorageService } from '@/services/userDataStorageService'
+import { storageService } from '@/services/storage/StorageService'
 import type { UserDataPoint, UserDataSet, ValidationResult } from '@/types/userData'
 
 // Props
@@ -278,7 +278,7 @@ const parseFile = async (file: File) => {
 /**
  * 确认导入
  */
-const confirmImport = () => {
+const confirmImport = async () => {
   try {
     // 创建数据集
     const dataSet: UserDataSet = {
@@ -291,12 +291,12 @@ const confirmImport = () => {
       updatedAt: new Date().toISOString()
     }
 
-    // 保存到 localStorage
-    const success = UserDataStorageService.addDataSet(dataSet)
+    // 保存到存储服务（支持本地和云存储）
+    const success = await storageService.saveDataSet(dataSet)
     
     if (success) {
       // 再次验证数据是否真的保存了
-      const verifyDataSets = UserDataStorageService.loadDataSets()
+      const verifyDataSets = await storageService.loadDataSets()
       const saved = verifyDataSets.find(ds => ds.id === dataSet.id)
       
       if (!saved) {

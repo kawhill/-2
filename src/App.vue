@@ -52,7 +52,7 @@ import type { UserDataPoint, UserDataSet } from '@/types/userData'
 import { WeatherService } from '@/services/weatherService'
 import { FertilizerService } from '@/services/fertilizerService'
 import { LocationNameService } from '@/services/locationNameService'
-import { UserDataStorageService } from '@/services/userDataStorageService'
+import { storageService } from '@/services/storage/StorageService'
 import type { CityInfo as ServiceCityInfo } from '@/services/completeCityDatabaseService'
 import { v4 as uuidv4 } from 'uuid'
 import type { User } from '@supabase/supabase-js'
@@ -259,17 +259,23 @@ const initializeShibaoDataSet = () => {
 */
 
 // 加载用户数据
-const loadUserData = () => {
-  userDataSets.value = UserDataStorageService.loadDataSets()
-  console.log('✅ App: 已加载用户数据', userDataSets.value.length, '个数据集')
-  
-  // 详细日志：列出所有数据集
-  if (userDataSets.value.length > 0) {
-    userDataSets.value.forEach((ds, index) => {
-      console.log(`  - 数据集 ${index + 1}: ${ds.name} (分区: ${ds.regionName || '无'}, ${ds.points.length} 个点)`)
-    })
-  } else {
-    console.warn('⚠️ App: 没有找到任何用户数据，localStorage可能为空或被清除')
+const loadUserData = async () => {
+  try {
+    const dataSets = await storageService.loadDataSets()
+    userDataSets.value = dataSets
+    console.log('✅ App: 已加载用户数据', dataSets.length, '个数据集')
+    
+    // 详细日志：列出所有数据集
+    if (dataSets.length > 0) {
+      dataSets.forEach((ds, index) => {
+        console.log(`  - 数据集 ${index + 1}: ${ds.name} (分区: ${ds.regionName || '无'}, ${ds.points.length} 个点)`)
+      })
+    } else {
+      console.warn('⚠️ App: 没有找到任何用户数据')
+    }
+  } catch (error) {
+    console.error('❌ 加载用户数据失败:', error)
+    userDataSets.value = []
   }
 }
 
@@ -301,7 +307,7 @@ const checkAuthStatus = async () => {
     if (isAuthenticated.value) {
       console.log('✅ 用户已登录:', user?.email || '匿名用户')
       // 登录后才加载数据
-      loadUserData()
+      await loadUserData()
       loadImportedPoints()
     } else {
       console.log('⚠️ 用户未登录，应该显示登录界面')
@@ -340,7 +346,9 @@ onMounted(() => {
     isAuthenticated.value = user !== null
     if (isAuthenticated.value) {
       console.log('✅ 认证状态变化：用户已登录')
-      loadUserData()
+      loadUserData().catch(error => {
+        console.error('❌ 加载用户数据失败:', error)
+      })
       loadImportedPoints()
     } else {
       console.log('⚠️ 认证状态变化：用户已登出')

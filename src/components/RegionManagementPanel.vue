@@ -99,7 +99,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
 import type { UserDataSet } from '@/types/userData'
-import { UserDataStorageService } from '@/services/userDataStorageService'
+import { storageService } from '@/services/storage/StorageService'
 
 const props = defineProps<{
   visible: boolean
@@ -184,7 +184,7 @@ const cancelRename = () => {
 }
 
 // 确认重命名
-const confirmRename = () => {
+const confirmRename = async () => {
   if (!renamingRegion.value || !newRegionName.value.trim()) return
   
   const trimmedName = newRegionName.value.trim()
@@ -206,7 +206,7 @@ const confirmRename = () => {
     updatedAt: new Date().toISOString()
   }
   
-  const success = UserDataStorageService.updateDataSet(renamingRegion.value.id, updatedDataSet)
+  const success = await storageService.updateDataSet(renamingRegion.value.id, updatedDataSet)
   
   if (success) {
     const oldName = renamingRegion.value.regionName || '未命名分区'
@@ -231,10 +231,10 @@ const cancelDelete = () => {
 }
 
 // 确认删除
-const confirmDelete = () => {
+const confirmDelete = async () => {
   if (!deletingRegion.value) return
   
-  const success = UserDataStorageService.deleteDataSet(deletingRegion.value.id)
+  const success = await storageService.deleteDataSet(deletingRegion.value.id)
   
   if (success) {
     const regionName = deletingRegion.value.regionName || '未命名分区'
