@@ -21,14 +21,43 @@ export class CloudStorageAdapter implements IStorageAdapter {
     if (!this.checkSupabase()) return null
 
     try {
-      const { data: { user }, error } = await supabase!.auth.getUser()
-      if (error) {
-        console.error('获取用户失败:', error)
+      // 先检查会话，避免在没有会话时调用 getUser() 导致错误
+      let session = null
+      try {
+        const sessionResult = await supabase!.auth.getSession()
+        session = sessionResult.data?.session || null
+      } catch (sessionError: any) {
+        // getSession() 也可能抛出错误，静默处理
+        if (sessionError?.name === 'AuthSessionMissingError' || 
+            sessionError?.message?.includes('session')) {
+          return null
+        }
         return null
       }
-      return user?.id || null
-    } catch (error) {
-      console.error('获取用户 ID 异常:', error)
+
+      // 如果没有会话，直接返回 null
+      if (!session) {
+        return null
+      }
+
+      // 有会话，尝试获取用户信息
+      try {
+        const { data: { user }, error } = await supabase!.auth.getUser()
+        if (error) {
+          // 静默处理错误，不记录日志（这是正常情况）
+          return null
+        }
+        return user?.id || null
+      } catch (getUserError: any) {
+        // getUser() 也可能抛出错误，静默处理
+        if (getUserError?.name === 'AuthSessionMissingError' || 
+            getUserError?.message?.includes('session')) {
+          return null
+        }
+        return null
+      }
+    } catch (error: any) {
+      // 捕获所有其他异常，静默处理
       return null
     }
   }

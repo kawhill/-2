@@ -282,22 +282,41 @@ const handleUserDataUpdated = (dataSets: UserDataSet[]) => {
 // 检查登录状态
 const checkAuthStatus = async () => {
   console.log('🔍 开始检查登录状态...')
+  console.log('🔍 isAuthenticated 当前值:', isAuthenticated.value)
+  
   try {
     const user = await AuthService.getCurrentUser()
     console.log('🔍 获取用户结果:', user ? `已登录 (${user.email})` : '未登录')
+    
+    // 明确设置认证状态
+    const wasAuthenticated = isAuthenticated.value
     isAuthenticated.value = user !== null
+    
+    console.log('🔍 认证状态更新:', {
+      '之前': wasAuthenticated,
+      '现在': isAuthenticated.value,
+      '用户': user ? user.email : null
+    })
+    
     if (isAuthenticated.value) {
       console.log('✅ 用户已登录:', user?.email || '匿名用户')
       // 登录后才加载数据
       loadUserData()
       loadImportedPoints()
     } else {
-      console.log('⚠️ 用户未登录，显示登录界面')
+      console.log('⚠️ 用户未登录，应该显示登录界面')
       console.log('⚠️ isAuthenticated.value =', isAuthenticated.value)
+      // 确保数据被清空
+      if (wasAuthenticated) {
+        userDataSets.value = []
+        importedPoints.value = []
+      }
     }
   } catch (error) {
     console.error('❌ 检查登录状态时出错:', error)
+    // 出错时确保显示登录界面
     isAuthenticated.value = false
+    console.log('⚠️ 出错后设置 isAuthenticated.value =', isAuthenticated.value)
   }
 }
 

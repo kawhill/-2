@@ -7,18 +7,58 @@ export class AuthService {
    */
   static async getCurrentUser(): Promise<User | null> {
     if (!supabase) {
-      console.warn('⚠️ Supabase 未配置')
+      console.warn('⚠️ Supabase 未配置，无法获取用户')
       return null
     }
 
     try {
-      const { data: { user }, error } = await supabase.auth.getUser()
-      if (error) {
-        console.error('获取用户失败:', error)
+      // 先尝试获取会话，使用 try-catch 包裹以避免任何可能的错误
+      let session = null
+      try {
+        const sessionResult = await supabase.auth.getSession()
+        session = sessionResult.data?.session || null
+      } catch (sessionError: any) {
+        // getSession() 也可能抛出错误，静默处理
+        if (sessionError?.name === 'AuthSessionMissingError' || 
+            sessionError?.message?.includes('session')) {
+          // 没有会话是正常情况
+          return null
+        }
+        // 其他错误也静默处理，因为没有会话时这是预期的
         return null
       }
-      return user
-    } catch (error) {
+
+      // 如果没有会话，直接返回 null
+      if (!session) {
+        return null
+      }
+
+      // 有会话，尝试获取用户信息
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser()
+        if (error) {
+          // 只有在有会话但获取用户失败时才记录错误
+          console.error('获取用户失败:', error)
+          return null
+        }
+        return user
+      } catch (getUserError: any) {
+        // getUser() 也可能抛出错误
+        if (getUserError?.name === 'AuthSessionMissingError' || 
+            getUserError?.message?.includes('session')) {
+          // 静默处理：会话可能已过期
+          return null
+        }
+        console.error('获取用户异常:', getUserError)
+        return null
+      }
+    } catch (error: any) {
+      // 捕获所有其他异常
+      if (error?.message?.includes('session') || error?.name === 'AuthSessionMissingError') {
+        // 静默处理：没有会话是正常情况
+        return null
+      }
+      // 其他错误才记录
       console.error('获取用户异常:', error)
       return null
     }
@@ -137,9 +177,21 @@ export class AuthService {
       return { data: { subscription: { unsubscribe: () => {} } } }
     }
 
-    return supabase.auth.onAuthStateChange((event, session) => {
-      callback(session?.user || null)
-    })
+    try {
+      return supabase.auth.onAuthStateChange((event, session) => {
+        try {
+          callback(session?.user || null)
+        } catch (error: any) {
+          // 回调函数中的错误不应该影响监听器
+          console.error('认证状态变化回调错误:', error)
+          callback(null)
+        }
+      })
+    } catch (error: any) {
+      // 如果监听器创建失败，返回一个空的订阅对象
+      console.error('创建认证状态监听器失败:', error)
+      return { data: { subscription: { unsubscribe: () => {} } } }
+    }
   }
 }
 
