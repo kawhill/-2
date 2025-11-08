@@ -281,15 +281,23 @@ const handleUserDataUpdated = (dataSets: UserDataSet[]) => {
 
 // 检查登录状态
 const checkAuthStatus = async () => {
-  const user = await AuthService.getCurrentUser()
-  isAuthenticated.value = user !== null
-  if (isAuthenticated.value) {
-    console.log('✅ 用户已登录:', user?.email || '匿名用户')
-    // 登录后才加载数据
-    loadUserData()
-    loadImportedPoints()
-  } else {
-    console.log('⚠️ 用户未登录，显示登录界面')
+  console.log('🔍 开始检查登录状态...')
+  try {
+    const user = await AuthService.getCurrentUser()
+    console.log('🔍 获取用户结果:', user ? `已登录 (${user.email})` : '未登录')
+    isAuthenticated.value = user !== null
+    if (isAuthenticated.value) {
+      console.log('✅ 用户已登录:', user?.email || '匿名用户')
+      // 登录后才加载数据
+      loadUserData()
+      loadImportedPoints()
+    } else {
+      console.log('⚠️ 用户未登录，显示登录界面')
+      console.log('⚠️ isAuthenticated.value =', isAuthenticated.value)
+    }
+  } catch (error) {
+    console.error('❌ 检查登录状态时出错:', error)
+    isAuthenticated.value = false
   }
 }
 
@@ -302,12 +310,14 @@ const handleAuthSuccess = () => {
 // 组件挂载时检查登录状态
 onMounted(() => {
   console.log('🚀 App: 开始初始化...')
+  console.log('🚀 isAuthenticated 初始值:', isAuthenticated.value)
   
   // 检查登录状态
   checkAuthStatus()
   
   // 监听认证状态变化
   authStateSubscription = AuthService.onAuthStateChange((user: User | null) => {
+    console.log('🔄 认证状态变化:', user ? `已登录 (${user.email})` : '已登出')
     isAuthenticated.value = user !== null
     if (isAuthenticated.value) {
       console.log('✅ 认证状态变化：用户已登录')
