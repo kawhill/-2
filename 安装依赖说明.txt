@@ -1,0 +1,61 @@
+===========================================
+如何安装 Supabase 依赖包
+===========================================
+
+步骤 1：打开命令行工具
+
+方法 A：使用 PowerShell
+1. 按 Windows 键
+2. 输入 "PowerShell"
+3. 点击 "Windows PowerShell" 或 "PowerShell"
+
+方法 B：使用命令提示符（CMD）
+1. 按 Windows 键
+2. 输入 "cmd"
+3. 点击 "命令提示符"
+
+方法 C：在项目文件夹中直接打开
+1. 打开文件资源管理器
+2. 导航到：C:\Users\SwaggyP\geo-info-app
+3. 在地址栏输入：powershell
+4. 按 Enter（会在当前文件夹打开 PowerShell）
+
+
+步骤 2：确认当前目录
+
+在命令行中输入：
+cd C:\Users\SwaggyP\geo-info-app
+
+然后按 Enter
+
+
+步骤 3：执行安装命令
+
+输入以下命令：
+npm install @supabase/supabase-js
+
+然后按 Enter
+
+
+步骤 4：等待安装完成
+
+你会看到类似这样的输出：
++ @supabase/supabase-js@2.x.x
+added 1 package in 5s
+
+看到 "added 1 package" 就表示安装成功了！
+
+
+常见问题：
+
+Q: 提示 "npm 不是内部或外部命令"？
+A: 说明 Node.js 没有安装或没有添加到系统路径。
+   需要先安装 Node.js：https://nodejs.org/
+
+Q: 安装很慢？
+A: 这是正常的，需要从网络下载包。耐心等待即可。
+
+Q: 安装失败？
+A: 检查网络连接，或者尝试：
+   npm install @supabase/supabase-js --registry=https://registry.npmmirror.com
+

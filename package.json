@@ -11,6 +11,7 @@
     "type-check": "vue-tsc --noEmit"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.80.0",
     "axios": "^1.6.0",
     "leaflet": "^1.9.4",
     "uuid": "^13.0.0",

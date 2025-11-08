@@ -1,6 +1,15 @@
 ﻿<template>
   <div class="app">
-    <div class="app-body">
+    <!-- 登录界面：未登录时显示 -->
+    <div v-if="!isAuthenticated" class="login-required">
+      <AuthPanel 
+        :show-close="false"
+        @auth-success="handleAuthSuccess"
+      />
+    </div>
+
+    <!-- 主应用界面：登录后显示 -->
+    <div v-else class="app-body">
       <Sidebar 
         @city-selected="handleCitySelected"
         @coordinate-selected="handleCoordinateSelected"
@@ -32,10 +41,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import MapComponent from '@/components/MapComponent.vue'
 import InfoPopup from '@/components/InfoPopup.vue'
 import Sidebar from '@/components/Sidebar.vue'
+import AuthPanel from '@/components/AuthPanel.vue'
+import { AuthService } from '@/services/auth/authService'
 import type { MapClickData, GeoLocation, ImportedGeoPoint } from '@/types'
 import type { UserDataPoint, UserDataSet } from '@/types/userData'
 import { WeatherService } from '@/services/weatherService'
@@ -44,7 +55,9 @@ import { LocationNameService } from '@/services/locationNameService'
 import { UserDataStorageService } from '@/services/userDataStorageService'
 import type { CityInfo as ServiceCityInfo } from '@/services/completeCityDatabaseService'
 import { v4 as uuidv4 } from 'uuid'
+import type { User } from '@supabase/supabase-js'
 
+const isAuthenticated = ref(false)
 const popupVisible = ref(false)
 const importedPoints = ref<ImportedGeoPoint[]>([])
 const userDataSets = ref<UserDataSet[]>([])
@@ -58,6 +71,8 @@ const clickData = ref<MapClickData>({
   terrainInfo: undefined,
   evapotranspiration: undefined
 })
+
+let authStateSubscription: any = null
 
 const weatherService = WeatherService.getInstance()
 const fertilizerService = FertilizerService.getInstance()
@@ -264,17 +279,54 @@ const handleUserDataUpdated = (dataSets: UserDataSet[]) => {
   console.log('✅ App: 用户数据已更新')
 }
 
-// 组件挂载时加载导入的点数据和用户数据
+// 检查登录状态
+const checkAuthStatus = async () => {
+  const user = await AuthService.getCurrentUser()
+  isAuthenticated.value = user !== null
+  if (isAuthenticated.value) {
+    console.log('✅ 用户已登录:', user?.email || '匿名用户')
+    // 登录后才加载数据
+    loadUserData()
+    loadImportedPoints()
+  } else {
+    console.log('⚠️ 用户未登录，显示登录界面')
+  }
+}
+
+// 处理登录成功
+const handleAuthSuccess = () => {
+  console.log('✅ 登录成功，加载应用数据')
+  checkAuthStatus()
+}
+
+// 组件挂载时检查登录状态
 onMounted(() => {
   console.log('🚀 App: 开始初始化...')
   
-  // 加载用户数据
-  loadUserData()
+  // 检查登录状态
+  checkAuthStatus()
   
-  // 加载导入的点数据（已废弃，保持兼容性）
-loadImportedPoints()
-  
-  console.log('✅ App: 初始化完成，共', userDataSets.value.length, '个数据集')
+  // 监听认证状态变化
+  authStateSubscription = AuthService.onAuthStateChange((user: User | null) => {
+    isAuthenticated.value = user !== null
+    if (isAuthenticated.value) {
+      console.log('✅ 认证状态变化：用户已登录')
+      loadUserData()
+      loadImportedPoints()
+    } else {
+      console.log('⚠️ 认证状态变化：用户已登出')
+      // 清空数据
+      userDataSets.value = []
+      importedPoints.value = []
+    }
+  })
+})
+
+// 组件卸载时清理
+onUnmounted(() => {
+  if (authStateSubscription && authStateSubscription.data) {
+    authStateSubscription.data.subscription.unsubscribe()
+  }
 })
 
 // 解析导入点的植被类型信息
@@ -519,5 +571,15 @@ const handleRegionNavigate = (lat: number, lng: number, zoom: number, regionName
     margin-left: 0;
     margin-top: 0;
   }
+}
+
+/* 登录界面样式 */
+.login-required {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 </style>

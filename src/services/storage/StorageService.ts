@@ -1,5 +1,6 @@
 // 统一存储服务
 import { LocalStorageAdapter } from './LocalStorageAdapter'
+import { CloudStorageAdapter } from './CloudStorageAdapter'
 import { StorageSettings } from './StorageSettings'
 import type { IStorageAdapter } from './IStorageAdapter'
 import type { StorageType } from './StorageSettings'
@@ -25,10 +26,7 @@ export class StorageService {
     if (type === 'local') {
       return new LocalStorageAdapter()
     } else {
-      // 云存储适配器（待实现）
-      // 暂时返回本地存储适配器作为后备
-      console.warn('⚠️ 云存储适配器尚未实现，使用本地存储作为后备')
-      return new LocalStorageAdapter()
+      return new CloudStorageAdapter()
     }
   }
 
@@ -37,16 +35,12 @@ export class StorageService {
    */
   async switchStorage(type: StorageType): Promise<boolean> {
     try {
-      // 检查新存储方式是否可用
+      // 创建新适配器
       const newAdapter = type === 'local' 
         ? new LocalStorageAdapter()
-        : null // 云存储适配器待实现
+        : new CloudStorageAdapter()
 
-      if (!newAdapter) {
-        console.error('云存储适配器尚未实现')
-        return false
-      }
-
+      // 检查新存储方式是否可用
       const isAvailable = await newAdapter.isAvailable()
       if (!isAvailable) {
         console.error('存储方式不可用:', type)

@@ -101,6 +101,7 @@
             <span class="menu-arrow">{{ expandedMenus.system ? '▼' : '▶' }}</span>
           </div>
           <div v-if="expandedMenus.system" class="submenu">
+            <div class="submenu-item" @click="showAuth">登录 / 注册</div>
             <div class="submenu-item" @click="showSettings">系统设置</div>
             <div class="submenu-item" @click="showAbout">关于系统</div>
           </div>
@@ -228,6 +229,13 @@
     @region-renamed="handleRegionRenamed"
     @view-region="handleViewRegionFromManagement"
   />
+
+  <!-- 认证面板 -->
+  <AuthPanel
+    v-if="showAuthModal"
+    @close="closeAuth"
+    @auth-success="handleAuthSuccess"
+  />
 </template>
 
 <script setup lang="ts">
@@ -235,6 +243,7 @@ import { ref, watch, onMounted, computed } from 'vue'
 import { CompleteCityDatabaseService, type CityInfo as ServiceCityInfo } from '@/services/completeCityDatabaseService'
 import DataImportPanel from './DataImportPanel.vue'
 import RegionManagementPanel from './RegionManagementPanel.vue'
+import AuthPanel from './AuthPanel.vue'
 import { UserDataStorageService } from '@/services/userDataStorageService'
 import type { UserDataSet } from '@/types/userData'
 
@@ -253,6 +262,7 @@ const showCityModal = ref(false)
 const showCoordinateModal = ref(false)
 const showImportModal = ref(false)
 const showRegionManagementModal = ref(false)
+const showAuthModal = ref(false)
 const userDataSets = ref<UserDataSet[]>([])
 const expandedMenus = ref({
   search: false,
@@ -513,6 +523,20 @@ const gotoUserRegion = (dataSet: UserDataSet) => {
   const regionDisplayName = dataSet.regionName || '未命名分区'
   console.log(`📍 导航到分区 "${regionDisplayName}" (${dataSet.points.length}个点)`)
   emit('regionNavigate', centerLat, centerLng, zoom, dataSet.regionName)
+}
+
+const showAuth = () => {
+  showAuthModal.value = true
+  expandedMenus.value.system = false
+}
+
+const closeAuth = () => {
+  showAuthModal.value = false
+}
+
+const handleAuthSuccess = () => {
+  console.log('✅ 认证成功')
+  // 可以在这里触发数据重新加载等操作
 }
 
 const showSettings = () => {

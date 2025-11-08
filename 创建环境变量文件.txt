@@ -1,0 +1,37 @@
+===========================================
+使用 Windows 记事本创建 .env.local 文件
+===========================================
+
+步骤 1：打开记事本
+- 按 Windows 键，输入"记事本"，打开记事本
+
+步骤 2：输入以下内容
+（请替换为你的实际 Supabase 配置）
+
+# Supabase Configuration
+VITE_SUPABASE_URL=https://你的项目ID.supabase.co
+VITE_SUPABASE_ANON_KEY=你的anon密钥
+
+步骤 3：保存文件
+- 点击"文件" → "另存为"
+- 在"保存位置"选择：C:\Users\SwaggyP\geo-info-app
+- 在"文件名"输入：.env.local
+- 在"保存类型"选择：所有文件 (*.*)
+- 点击"保存"
+
+⚠️ 重要：
+1. 文件名必须是 .env.local（前面有个点）
+2. 保存类型必须选择"所有文件"，否则会保存成 .env.local.txt
+3. 如果提示"如果改变文件扩展名，可能会导致文件不可用"，点击"是"
+
+步骤 4：获取 Supabase 配置信息
+1. 打开浏览器，访问：https://app.supabase.com
+2. 登录并选择你的项目
+3. 点击左侧菜单的"Settings"（设置）
+4. 点击"API"
+5. 复制"Project URL"和"anon public" key
+6. 回到记事本，替换文件中的内容
+7. 保存文件（Ctrl+S）
+
+完成！
+
